@@ -1,0 +1,186 @@
+import numpy as np
+import pandas as pd
+import torch 
+import torchvision
+import transformers 
+import datetime as dt
+
+
+data = pd.read_csv('~/Downloads/MyCourses/StockMarketSentimentAnalysis/AMZN_prerob.csv')
+
+data.head()
+
+data.columns
+
+# Converting the stock_times into datetime objects
+data['stock_time'] = pd.to_datetime(data['stock_time'])
+
+# extracting indices of times immediately after a news article was published
+publishing_indices = data[data['Publishing Time'].notna()].index
+
+averages = []
+for i in range(len(publishing_indices) + 1):
+    if i == 0:
+        start, end = 0 , publishing_indices[0]
+    elif i == len(publishing_indices):
+        start, end = publishing_indices[-1], len(data) - 1
+    else:
+        start, end = publishing_indices[i - 1], publishing_indices[i]
+#     print(f'start is {start} end is {end}')
+    averages.append(data['open'][start:end].mean())
+
+rob_sentiment = data['rob_sentiment'][data['rob_sentiment'].notna()]
+rob_sentiment = list(rob_sentiment)
+
+
+matching_with_sentiment = []
+for i in range(1 , len(averages)-1):
+    diff = averages[i] - averages[i - 1]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment.append([False , i , diff , rob_sentiment[i]])
+
+matching_with_sentiment
+
+
+# Percentage of the average of the stock price differences (before and after publish) that 
+# is supported by the sentiment of the roberta model
+avg = sum([matching_with_sentiment[i][0] == True for i in range(len(matching_with_sentiment))]) / len(matching_with_sentiment)
+print(f'Average percentage of times the articles\' sentiment matched the average stock price movement for Amazon is:\n {avg *100}')
+
+
+matching_with_sentiment_diff = []
+for i in range(len(publishing_indices)):
+    diff = data['close'][i] - data['open'][i]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment_diff.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment_diff.append([False , i , diff , rob_sentiment[i]])
+avg = sum([matching_with_sentiment_diff[i][0] == True for i in range(len(matching_with_sentiment_diff))]) / len(matching_with_sentiment_diff)
+print(f'Average percentage of times the articles\' sentiment matches close - open price movement for Amazon is:\n {avg *100}')
+
+
+
+matching_with_sentiment_diff = []
+for i in range(len(publishing_indices)):
+    diff = data['close'][i+9] - data['open'][i]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment_diff.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment_diff.append([False , i , diff , rob_sentiment[i]])
+avg = sum([matching_with_sentiment_diff[i][0] == True for i in range(len(matching_with_sentiment_diff))]) / len(matching_with_sentiment_diff)
+print(f'The result of waiting for a while (2 hours in this case) is {avg * 100}, slightly better!')
+
+
+
+
+data = pd.read_csv('~/Downloads/MyCourses/StockMarketSentimentAnalysis/AAPL_prerob.csv')
+
+# Converting the stock_times into datetime objects
+data['stock_time'] = pd.to_datetime(data['stock_time'])
+
+# extracting indices of times immediately after a news article was published
+publishing_indices = data[data['Publishing Time'].notna()].index
+
+averages = []
+for i in range(len(publishing_indices) + 1):
+    if i == 0:
+        start, end = 0 , publishing_indices[0]
+    elif i == len(publishing_indices):
+        start, end = publishing_indices[-1], len(data) - 1
+    else:
+        start, end = publishing_indices[i - 1], publishing_indices[i]
+#     print(f'start is {start} end is {end}')
+    averages.append(data['open'][start:end].mean())
+    
+rob_sentiment = data['rob_sentiment'][data['rob_sentiment'].notna()]
+rob_sentiment = list(rob_sentiment)
+
+
+matching_with_sentiment = []
+for i in range(1 , len(averages)-1):
+    diff = averages[i] - averages[i - 1]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment.append([False , i , diff , rob_sentiment[i]])
+
+avg = sum([matching_with_sentiment[i][0] == True for i in range(len(matching_with_sentiment))]) / len(matching_with_sentiment)
+print(f'Average percentage of times the articles\' sentiment matched the average stock price movement is {avg *100}')
+
+
+matching_with_sentiment_diff = []
+for i in range(len(publishing_indices)):
+    diff = data['close'][i] - data['open'][i]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment_diff.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment_diff.append([False , i , diff , rob_sentiment[i]])
+open_close = sum([matching_with_sentiment_diff[i][0] == True for i in range(len(matching_with_sentiment_diff))]) / len(matching_with_sentiment_diff)
+print(f'Average percentage of times the articles\' sentiment matched the stock price movement at the close relative to the opening price {open_close *100}')
+
+
+matching_with_sentiment_diff = []
+for i in range(len(publishing_indices)):
+    diff = data['close'][i + 14] - data['open'][i]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment_diff.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment_diff.append([False , i , diff , rob_sentiment[i]])
+open_close = sum([matching_with_sentiment_diff[i][0] == True for i in range(len(matching_with_sentiment_diff))]) / len(matching_with_sentiment_diff)
+print(f'Average percentage of times the articles\' sentiment matched the stock price movement at the close some three hours after the publishing of the article relative to the opening price {open_close *100}')
+
+
+
+data = pd.read_csv('~/Downloads/MyCourses/StockMarketSentimentAnalysis/LLY_prerob.csv')
+
+# Converting the stock_times into datetime objects
+data['stock_time'] = pd.to_datetime(data['stock_time'])
+
+# extracting indices of times immediately after a news article was published
+publishing_indices = data[data['Publishing Time'].notna()].index
+
+averages = []
+for i in range(len(publishing_indices) + 1):
+    if i == 0:
+        start, end = 0 , publishing_indices[0]
+    elif i == len(publishing_indices):
+        start, end = publishing_indices[-1], len(data) - 1
+    else:
+        start, end = publishing_indices[i - 1], publishing_indices[i]
+#     print(f'start is {start} end is {end}')
+    averages.append(data['open'][start:end].mean())
+    
+rob_sentiment = data['rob_sentiment'][data['rob_sentiment'].notna()]
+rob_sentiment = list(rob_sentiment)
+
+
+
+matching_with_sentiment = []
+for i in range(1 , len(averages)-1):
+    diff = averages[i] - averages[i - 1]
+    if (diff > 0 and rob_sentiment[i] == 'positive') or (diff < 0 and rob_sentiment[i] == 'negative'):
+        matching_with_sentiment.append([True , i , diff , rob_sentiment[i]])
+    elif rob_sentiment[i] == 'neutral':
+        continue
+    else:
+        matching_with_sentiment.append([False , i , diff , rob_sentiment[i]])
+
+avg = sum([matching_with_sentiment[i][0] == True for i in range(len(matching_with_sentiment))]) / len(matching_with_sentiment)
+print(f'Average percentage of times the articles\' sentiment matched the average stock price movement is {avg *100}')
+
+
+
